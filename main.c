@@ -30,7 +30,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "encryption.h"
 
 
 typedef struct Employee     //EMP= struct Employee
@@ -51,8 +50,8 @@ EMP emp[100];
 int count = 0;
 
 //Global variable for password
-char password_hash[HASH_SIZE];
-char recovery_hash[HASH_SIZE];
+char password[30];
+char recovery[30];
 
 
 void save_password()
@@ -60,42 +59,23 @@ void save_password()
     FILE *fp;
 
     fp = fopen("password.txt", "w");
-
-    if (fp == NULL)
-    {
-        printf("Error saving password!\n");
-        return;
-    }
-
-    fprintf(fp, "%s|%s\n", password_hash, recovery_hash);
-
+    fprintf(fp, "%s|%s\n", password, recovery); // I use '|' sign to separate passwords
     fclose(fp);
 }
 
 /* Runs only the very first time (when password.txt is not there) */
 void first_time_setup()
 {
-    char new_password[30];
-    char new_recovery[30];
-
     printf("\n  ==============================\n");
     printf("    FIRST TIME SETUP\n");
     printf("  ==============================\n");
     printf("  Create a password for this program.\n\n");
 
     printf("  New password  : ");
-    scanf(" %29[^\n]", new_password);
+    scanf(" %29[^\n]", password);
 
     printf("  Recovery word : ");
-    scanf(" %29[^\n]", new_recovery);
-
-    // Convert both values into hashes
-    if (!hash_text(new_password, password_hash) ||
-        !hash_text(new_recovery, recovery_hash))
-    {
-        printf("\n  Hashing failed!\n");
-        return;
-    }
+    scanf(" %29[^\n]", recovery);
 
     save_password();
 
@@ -106,80 +86,40 @@ void first_time_setup()
 void load_password()
 {
     FILE *fp;
-    char line[HASH_SIZE * 2 + 2];
-    char *separator;
 
     fp = fopen("password.txt", "r");
-
     if (fp == NULL)
     {
         first_time_setup();
         return;
     }
 
-    if (fgets(line, sizeof(line), fp) == NULL)
-    {
-        printf("Error reading password file!\n");
-        fclose(fp);
-        return;
-    }
-
+    fscanf(fp, "%29[^|]|%29[^\n]", password, recovery);
     fclose(fp);
-
-    separator = strchr(line, '|');
-
-    if (separator == NULL)
-    {
-        printf("Invalid password file!\n");
-        return;
-    }
-
-    *separator = '\0';
-
-    separator++;
-
-    separator[strcspn(separator, "\r\n")] = '\0';
-
-    if (strlen(line) >= HASH_SIZE ||
-        strlen(separator) >= HASH_SIZE)
-    {
-        printf("Invalid password file!\n");
-        return;
-    }
-
-    strcpy(password_hash, line);
-    strcpy(recovery_hash, separator);
 }
 
 /* Forgot password: the recovery word gives a new password */
 int reset_password()
 {
     char typed[30];
-    char new_password[30];
 
     printf("\n  Enter your recovery word: ");
     scanf(" %29[^\n]", typed);
 
-    if (!verify_text(typed, recovery_hash))
+    if (strcmp(typed, recovery) != 0)
     {
         printf("\n  Wrong recovery word.\n");
         return 0;
     }
 
     printf("  Enter new password: ");
-    scanf(" %29[^\n]", new_password);
-
-    if (!hash_text(new_password, password_hash))
-    {
-        printf("\n  Password hashing failed!\n");
-        return 0;
-    }
-
+    scanf(" %29[^\n]", password);
     save_password();
 
     printf("\n  Password reset done!\n");
     return 1;
 }
+
 /* Gives 1 if login is ok, 0 if not */
 int login()
 {
@@ -196,7 +136,7 @@ int login()
         printf("  Enter password (try %d of 3): ", tries);
         scanf(" %29[^\n]", typed);
 
-        if (verify_text(typed, password_hash))
+        if (strcmp(typed, password) == 0)
         {
             printf("\n  Login successful. Welcome!\n");
             return 1;
@@ -217,33 +157,27 @@ int login()
 void change_password()
 {
     char typed[30];
-    char new_password[30];
 
     printf("\n  Enter old password: ");
     scanf(" %29[^\n]", typed);
 
-    if (!verify_text(typed, password_hash))
+    if (strcmp(typed, password) != 0)
     {
         printf("\n  Wrong password.\n");
         return;
     }
 
     printf("  Enter new password: ");
-    scanf(" %29[^\n]", new_password);
-
-    if (!hash_text(new_password, password_hash))
-    {
-        printf("\n  Password hashing failed!\n");
-        return;
-    }
-
+    scanf(" %29[^\n]", password);
     save_password();
 
     printf("\n  Done! Password changed.\n");
 }
 
 
-//File Function
+/* =========================================================
+   PART 2 : EMPLOYEE FILE
+   ========================================================= */
 
 void load_file()
 {
@@ -257,8 +191,7 @@ void load_file()
     }
 
     p = emp;                    /* p points to the first employee */
-    while (count < 100 &&
-           fscanf(fp, "%d %29s %29s %29s %19s %f %d",
+    while (fscanf(fp, "%d %s %s %s %s %f %d",
                   &p->id, p->name, p->dept, p->desg,
                   p->phone, &p->salary, &p->absent) == 7)
     {
@@ -276,12 +209,6 @@ void save_file()
     int i;
 
     fp = fopen("employees.txt", "w");
-
-    if (fp == NULL)
-    {
-        printf("Error saving employees!\n");
-        return;
-    }
 
     for (i = 0; i < count; i++)
     {
@@ -777,12 +704,6 @@ void new_month()
 
 int main()
 {
-     if (initialize_encryption() < 0)
-    {
-        printf("Encryption initialization failed!\n");
-        return 1;
-    }
-
     int choice = -1;
     int c;
 
