@@ -24,8 +24,7 @@
      employees.txt  - all employees
      password.txt   - password and recovery word
 
-   Rule: type words WITHOUT spaces. Use _ instead.
-         Example:  Rahim_Uddin
+   
 */
 
 #include <stdio.h>
