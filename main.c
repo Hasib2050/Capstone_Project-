@@ -1,7 +1,7 @@
 /*
-   EMPLOYEE MANAGEMENT SYSTEM  (Basic Version + Realistic Features)
+   
 
-   Features:
+     Employee Management System 
      LOGIN       - password is needed to open the program
      FORGOT      - if you forget the password, use the recovery word
      1.  Add Employee
